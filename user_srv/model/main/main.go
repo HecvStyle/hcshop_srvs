@@ -1,14 +1,14 @@
 package main
 
 import (
-	"crypto/md5"
-	"encoding/hex"
+	"crypto/sha512"
+	"fmt"
+	"github.com/anaskhan96/go-password-encoder"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"hcshop_srvs/user_srv/model"
-	"io"
 	"log"
 	"os"
 	"time"
@@ -37,12 +37,19 @@ func main() {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.User{})
-}
+	options := &password.Options{16, 100, 32, sha512.New}
+	salt, encodedPwd := password.Encode("admin123", options)
+	newPassword := fmt.Sprintf("$pbkdf2-sha512$%s$%s", salt, encodedPwd)
+	fmt.Println(newPassword)
 
+	for i := 0; i < 10; i++ {
+		user := model.User{
+			NickName: fmt.Sprintf("bobby%d", i),
+			Mobile:   fmt.Sprintf("1878222222%d", i),
+			Password: newPassword,
+		}
+		db.Save(&user)
+	}
 
-func genMd5 (code string) string{
-	Md5 :=md5.New()
-	io.WriteString(Md5,code)
-	return hex.EncodeToString(Md5.Sum(nil))
+	//db.AutoMigrate(&model.User{})
 }
