@@ -22,7 +22,7 @@ func Init() {
 func main() {
 	Init()
 	//TestGetUserList()
-	TestCreateUser()
+	//TestCreateUser()
 	conn.Close()
 }
 

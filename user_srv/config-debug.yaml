@@ -1,0 +1,10 @@
+name: 'user-srv'
+port: 50051
+
+mysql:
+     host: '127.0.0.1'
+     port: 3306
+     password: 'root'
+     name: 'hcshop_user_srv'
+     user: 'root'
+
