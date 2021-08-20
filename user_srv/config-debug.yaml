@@ -1,4 +1,5 @@
 name: 'user-srv'
+host: '127.0.0.1'
 port: 50051
 
 mysql:
@@ -8,3 +9,6 @@ mysql:
      name: 'hcshop_user_srv'
      user: 'root'
 
+consul:
+      host: '127.0.0.1'
+      port: 8500

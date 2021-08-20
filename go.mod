@@ -7,6 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/golang/protobuf v1.5.2
 	github.com/hashicorp/consul/api v1.1.0
+	github.com/hashicorp/go-uuid v1.0.1
 	github.com/spf13/viper v1.8.1
 	go.uber.org/zap v1.17.0
 	google.golang.org/grpc v1.40.0

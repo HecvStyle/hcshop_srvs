@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/hashicorp/consul/api"
+	"github.com/hashicorp/go-uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -12,7 +13,11 @@ import (
 	"hcshop_srvs/user_srv/handler"
 	"hcshop_srvs/user_srv/initialize"
 	"hcshop_srvs/user_srv/proto"
+	"hcshop_srvs/user_srv/utils"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -27,10 +32,16 @@ func main() {
 	initialize.InitDB()
 
 	IP := flag.String("ip", "0.0.0.0", "ip 地址")
-	Port := flag.Int("port", 50051, "端口号")
+	Port := flag.Int("port", 0, "端口号")
 	flag.Parse()
 
+	// 如果没有通过命令行参数传递端口进来，则动态生成一个端口来使用
+	if *Port == 0 {
+		*Port, _ = utils.GetFreePort()
+	}
+
 	zap.S().Info("准备启动服务...")
+	zap.S().Info("使用的端口", *Port)
 	server := grpc.NewServer()
 	proto.RegisterUserServer(server, &handler.UserServer{})
 
@@ -51,7 +62,7 @@ func main() {
 	}
 
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("192.168.1.75:50051"),
+		GRPC:                           fmt.Sprintf("192.168.1.175:%d", *Port),
 		Interval:                       "5s",
 		Timeout:                        "5s",
 		DeregisterCriticalServiceAfter: "10s",
@@ -59,11 +70,11 @@ func main() {
 
 	registration := new(api.AgentServiceRegistration)
 	registration.Name = global.ServerConfig.Name
-	registration.ID = global.ServerConfig.Name
+	registration.ID, _ = uuid.GenerateUUID()
 	registration.Port = *Port
 	registration.Tags = []string{"user-srv"}
 	// 这里别瞎鸡毛加 "http://" scheme，这可是rpc 协议，踩坑 +1
-	registration.Address = fmt.Sprintf("192.168.1.75")
+	registration.Address = fmt.Sprintf("192.168.1.175")
 	registration.Check = check
 
 	err = client.Agent().ServiceRegister(registration)
@@ -71,9 +82,19 @@ func main() {
 		panic(err)
 	}
 
-	err = server.Serve(lis)
-	if err != nil {
-		panic("failed to start grpc:" + err.Error())
+	go func() {
+		err = server.Serve(lis)
+		if err != nil {
+			panic("failed to start grpc:" + err.Error())
+		}
+	}()
+	zap.S().Info("服务启动完成")
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	if err = client.Agent().ServiceDeregister(registration.ID); err != nil {
+		zap.S().Info("服务注销失败")
+		panic(err)
 	}
-	zap.S().Info("启动服务完毕")
+	zap.S().Info("注销成功")
 }
