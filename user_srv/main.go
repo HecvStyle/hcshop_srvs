@@ -62,7 +62,7 @@ func main() {
 	}
 
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("192.168.1.175:%d", *Port),
+		GRPC:                           fmt.Sprintf("192.168.1.75:%d", *Port),
 		Interval:                       "5s",
 		Timeout:                        "5s",
 		DeregisterCriticalServiceAfter: "10s",
@@ -74,7 +74,7 @@ func main() {
 	registration.Port = *Port
 	registration.Tags = []string{"user-srv"}
 	// 这里别瞎鸡毛加 "http://" scheme，这可是rpc 协议，踩坑 +1
-	registration.Address = fmt.Sprintf("192.168.1.175")
+	registration.Address = fmt.Sprintf("192.168.1.75")
 	registration.Check = check
 
 	err = client.Agent().ServiceRegister(registration)
