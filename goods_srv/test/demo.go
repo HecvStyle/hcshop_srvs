@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
-	"hcshop_srvs/user_srv/proto"
+	"hcshop_srvs/goods_srv/proto"
 )
 
 var userClient proto.UserClient

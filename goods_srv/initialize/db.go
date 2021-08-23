@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"hcshop_srvs/user_srv/global"
+	"hcshop_srvs/goods_srv/global"
 	"log"
 	"os"
 	"time"
