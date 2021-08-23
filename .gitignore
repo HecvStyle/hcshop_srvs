@@ -74,4 +74,5 @@ fabric.properties
 .idea
 
 /user_srv/config-pro.yaml
+/user_srv/config-debug.yaml
 /tmp/
