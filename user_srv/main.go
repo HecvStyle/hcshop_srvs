@@ -90,6 +90,8 @@ func main() {
 	}()
 	zap.S().Info("服务启动完成")
 	quit := make(chan os.Signal)
+
+	// 这里是没有监听到 goland 停止debug/build 的信号，所以停止时候，并不立刻注销服务
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	if err = client.Agent().ServiceDeregister(registration.ID); err != nil {

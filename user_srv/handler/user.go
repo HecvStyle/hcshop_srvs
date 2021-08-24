@@ -5,9 +5,9 @@ import (
 	"crypto/sha512"
 	"fmt"
 	"github.com/anaskhan96/go-password-encoder"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"gorm.io/gorm"
 	"hcshop_srvs/user_srv/global"
 	"hcshop_srvs/user_srv/model"
@@ -16,7 +16,9 @@ import (
 	"time"
 )
 
-type UserServer struct{}
+type UserServer struct{
+	proto.UnimplementedUserServer
+}
 
 func ModelToResponse(user model.User) proto.UserResponse {
 	// grpc 的message中，字段不能随便赋值nil，容易出错
@@ -68,7 +70,6 @@ func (u *UserServer) GetUserList(ctx context.Context, req *proto.PageInfo) (*pro
 	return rsp, nil
 }
 
-//CheckPassword(context.Context, *PasswordCheckInfo) (*CheckResponse, error)
 
 func (u *UserServer) GetUserByMobile(ctx context.Context, req *proto.MobileRequest) (*proto.UserResponse, error) {
 	var user model.User
@@ -123,7 +124,7 @@ func (u *UserServer) CreateUser(ctx context.Context, req *proto.CreateUserInfo) 
 }
 
 //UpdateUser 更新用户信息
-func (u *UserServer) UpdateUser(ctx context.Context, req *proto.UpdateUserInfo) (*empty.Empty, error) {
+func (u *UserServer) UpdateUser(ctx context.Context, req *proto.UpdateUserInfo) (*emptypb.Empty, error) {
 	var user model.User
 	result := global.DB.First(&user)
 	if result.RowsAffected == 0 {
@@ -138,7 +139,7 @@ func (u *UserServer) UpdateUser(ctx context.Context, req *proto.UpdateUserInfo) 
 	if result.Error != nil {
 		return nil, status.Errorf(codes.Internal, result.Error.Error())
 	}
-	return &empty.Empty{}, nil
+	return &emptypb.Empty{}, nil
 }
 
 //CheckPassword 密码验证

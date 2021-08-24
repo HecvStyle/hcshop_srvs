@@ -10,7 +10,9 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"hcshop_srvs/goods_srv/global"
+	"hcshop_srvs/goods_srv/handler"
 	"hcshop_srvs/goods_srv/initialize"
+	"hcshop_srvs/goods_srv/proto"
 	"hcshop_srvs/goods_srv/utils"
 	"net"
 	"os"
@@ -41,7 +43,7 @@ func main() {
 	zap.S().Info("准备启动服务...")
 	zap.S().Info("使用的端口", *Port)
 	server := grpc.NewServer()
-	//proto.RegisterUserServer(server, &handler.GoodsServer{})
+	proto.RegisterGoodsServer(server, &handler.GoodsServer{})
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *IP, *Port))
 	if err != nil {
@@ -60,7 +62,7 @@ func main() {
 	}
 
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("192.168.1.75:%d", *Port),
+		GRPC:                           fmt.Sprintf("%s:%d",global.ServerConfig.Host, *Port),
 		Interval:                       "5s",
 		Timeout:                        "5s",
 		DeregisterCriticalServiceAfter: "10s",
@@ -70,9 +72,9 @@ func main() {
 	registration.Name = global.ServerConfig.Name
 	registration.ID, _ = uuid.GenerateUUID()
 	registration.Port = *Port
-	registration.Tags = []string{"user-srv"}
+	registration.Tags = []string{"goods-srv"}
 	// 这里别瞎鸡毛加 "http://" scheme，这可是rpc 协议，踩坑 +1
-	registration.Address = fmt.Sprintf("192.168.1.75")
+	registration.Address = global.ServerConfig.Host
 	registration.Check = check
 
 	err = client.Agent().ServiceRegister(registration)

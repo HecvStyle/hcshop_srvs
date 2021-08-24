@@ -2,9 +2,23 @@ package handler
 
 import (
 	"gorm.io/gorm"
+	"hcshop_srvs/goods_srv/proto"
 )
 
-type GoodsServer struct{}
+type GoodsServer struct{
+	proto.UnimplementedGoodsServer
+}
+
+//GoodsList(context.Context, *proto.GoodsFilterRequest) (*proto.GoodsListResponse, error){
+//
+//}
+////现在用户提交订单有多个商品，你得批量查询商品的信息吧
+//BatchGetGoods(context.Context, *BatchGoodsIdInfo) (*GoodsListResponse, error)
+//CreateGoods(context.Context, *CreateGoodsInfo) (*GoodsInfoResponse, error)
+//DeleteGoods(context.Context, *DeleteGoodsInfo) (*emptypb.Empty, error)
+//UpdateGoods(context.Context, *CreateGoodsInfo) (*emptypb.Empty, error)
+//GetGoodsDetail(context.Context, *GoodInfoRequest) (*GoodsInfoResponse, error)
+
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
@@ -12,7 +26,6 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 		if page == 0 {
 			page = 1
 		}
-
 		switch {
 		case pageSize > 100:
 			pageSize = 100

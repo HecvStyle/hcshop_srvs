@@ -34,7 +34,7 @@ func main() {
 		panic(err)
 	}
 
-	db.AutoMigrate(&model.GoodsCategoryBrand{},&model.Banner{},&model.Goods{})
+	db.AutoMigrate(&model.Category{},&model.Brands{},&model.GoodsCategoryBrand{},&model.Banner{},&model.Goods{})
 
 	//&model.Category{},&model.Brands{},&model.GoodsCategoryBrand{},&model.Banner{},&model.Goods{}
 
