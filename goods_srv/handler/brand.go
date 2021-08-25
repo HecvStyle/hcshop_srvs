@@ -38,7 +38,7 @@ func (s *GoodsServer) BrandList(ctx context.Context, req *proto.BrandFilterReque
 func (s *GoodsServer) CreateBrand(ctx context.Context, req *proto.BrandRequest) (*proto.BrandInfoResponse, error) {
 	//新建品牌
 	if result := global.DB.Where("name=?", req.Name).First(&model.Brands{Name: req.Name}); result.RowsAffected > 0 {
-		return nil, status.Error(codes.InvalidArgument, "品牌已存在")
+		return nil, status.Error(codes.AlreadyExists, "品牌已存在")
 	}
 	brand := model.Brands{
 		Name: req.Name,
@@ -50,13 +50,13 @@ func (s *GoodsServer) CreateBrand(ctx context.Context, req *proto.BrandRequest) 
 }
 func (s *GoodsServer) DeleteBrand(ctx context.Context, req *proto.BrandRequest) (*emptypb.Empty, error) {
 	if result := global.DB.Delete(&model.Brands{}, req.Id); result.RowsAffected == 0 {
-		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
+		return nil, status.Error(codes.NotFound, "品牌不存在")
 	}
 	return &emptypb.Empty{}, nil
 }
 func (s *GoodsServer) UpdateBrand(ctx context.Context, req *proto.BrandRequest) (*emptypb.Empty, error) {
 	if result := global.DB.First(&model.Brands{}); result.RowsAffected == 0 {
-		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
+		return nil, status.Error(codes.NotFound, "品牌不存在")
 	}
 	brands := model.Brands{}
 	if req.Name != "" {
