@@ -22,6 +22,9 @@ import (
 
 func main() {
 
+	IP := flag.String("ip", "0.0.0.0", "ip 地址")
+	Port := flag.Int("port", 50052, "端口号")
+
 	// 配置文件初始化
 	initialize.InitConfig()
 
@@ -31,8 +34,8 @@ func main() {
 	// 初始化数据里链接
 	initialize.InitDB()
 
-	IP := flag.String("ip", "0.0.0.0", "ip 地址")
-	Port := flag.Int("port", 0, "端口号")
+	zap.S().Info(global.ServerConfig)
+
 	flag.Parse()
 
 	// 如果没有通过命令行参数传递端口进来，则动态生成一个端口来使用
@@ -62,7 +65,7 @@ func main() {
 	}
 
 	check := &api.AgentServiceCheck{
-		GRPC:                           fmt.Sprintf("%s:%d",global.ServerConfig.Host, *Port),
+		GRPC:                           fmt.Sprintf("%s:%d", global.ServerConfig.Host, *Port),
 		Interval:                       "5s",
 		Timeout:                        "5s",
 		DeregisterCriticalServiceAfter: "10s",
@@ -72,7 +75,7 @@ func main() {
 	registration.Name = global.ServerConfig.Name
 	registration.ID, _ = uuid.GenerateUUID()
 	registration.Port = *Port
-	registration.Tags = []string{"goods-srv"}
+	registration.Tags = global.ServerConfig.Tags
 	// 这里别瞎鸡毛加 "http://" scheme，这可是rpc 协议，踩坑 +1
 	registration.Address = global.ServerConfig.Host
 	registration.Check = check
