@@ -4,6 +4,7 @@ import (
 	"context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"hcshop_srvs/goods_srv/global"
 	"hcshop_srvs/goods_srv/model"
 	"hcshop_srvs/goods_srv/proto"
@@ -68,12 +69,50 @@ func (s *GoodsServer) GetCategoryBrandList(ctx context.Context, req *proto.Categ
 
 }
 
-//func (s *GoodsServer) CreateCategoryBrand(ctx context.Context, req *proto.CategoryBrandRequest) (*proto.CategoryBrandResponse, error) {
-//	var category model.Category
-//	if result := global.DB.First(&category,req.CategoryId);result.RowsAffected == 0{
-//
-//	}
-//}
+func (s *GoodsServer) CreateCategoryBrand(ctx context.Context, req *proto.CategoryBrandRequest) (*proto.CategoryBrandResponse, error) {
+	var category model.Category
+	if result := global.DB.First(&category, req.CategoryId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "分类不存在")
+	}
 
-//DeleteCategoryBrand(context.Context, *CategoryBrandRequest) (*emptypb.Empty, error)
-//UpdateCategoryBrand(context.Context, *CategoryBrandRequest) (*emptypb.Empty, error)
+	var brands model.Brands
+	if result := global.DB.First(&brands, req.BrandId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "品牌不存在")
+	}
+
+	categoryBrands := model.GoodsCategoryBrand{BrandsID: brands.ID, CategoryID: category.ID}
+	global.DB.Save(categoryBrands)
+	return &proto.CategoryBrandResponse{Id: categoryBrands.BrandsID}, nil
+
+}
+
+func (s *GoodsServer) DeleteCategoryBrand(ctx context.Context, req *proto.CategoryBrandRequest) (*emptypb.Empty, error) {
+	var categoryBrands model.GoodsCategoryBrand
+	if result := global.DB.Delete(&categoryBrands, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "品牌分类不存在")
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *GoodsServer) UpdateCategoryBrand(ctx context.Context, req *proto.CategoryBrandRequest) (*emptypb.Empty, error) {
+	var categoryBrands model.GoodsCategoryBrand
+	if result := global.DB.First(&categoryBrands, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "品牌分类不存在")
+	}
+
+	var category model.Category
+	if result := global.DB.First(&category, req.CategoryId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "分类不存在")
+	}
+
+	var brands model.Brands
+	if result := global.DB.First(&brands, req.BrandId); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "品牌不存在")
+	}
+
+	categoryBrands.CategoryID = category.ID
+	categoryBrands.BrandsID = brands.ID
+
+	global.DB.Save(&categoryBrands)
+	return &emptypb.Empty{}, nil
+}
