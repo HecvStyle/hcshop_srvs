@@ -90,7 +90,7 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 	localDB.Count(&total)
 
 	if result := localDB.Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goodsList); result.RowsAffected == 0 {
-		return nil, result.Error
+		return goodsListRespone, result.Error
 	}
 
 	var goodsInfoResps []*proto.GoodsInfoResponse

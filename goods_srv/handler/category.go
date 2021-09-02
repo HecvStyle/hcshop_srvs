@@ -12,8 +12,25 @@ import (
 )
 
 //商品分类
-func (s *GoodsServer) GetAllCategorysList(ctx context.Context, req *emptypb.Empty) (*proto.CategoryListResponse, error) {
-
+func (s *GoodsServer) GetAllCategorysList(context.Context, *emptypb.Empty) (*proto.CategoryListResponse, error){
+	/*
+		[
+			{
+				"id":xxx,
+				"name":"",
+				"level":1,
+				"is_tab":false,
+				"parent":13xxx,
+				"sub_category":[
+					"id":xxx,
+					"name":"",
+					"level":1,
+					"is_tab":false,
+					"sub_category":[]
+				]
+			}
+		]
+	*/
 	var categorys []model.Category
 	global.DB.Where(&model.Category{Level: 1}).Preload("SubCategory.SubCategory").Find(&categorys)
 	b, _ := json.Marshal(&categorys)
