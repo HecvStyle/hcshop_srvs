@@ -89,7 +89,7 @@ func (s *GoodsServer) GoodsList(ctx context.Context, req *proto.GoodsFilterReque
 	var total int64
 	localDB.Count(&total)
 
-	if result := localDB.Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goodsList); result.RowsAffected == 0 {
+	if result := localDB.Preload("Category").Preload("Brands").Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&goodsList); result.RowsAffected == 0 {
 		return goodsListRespone, result.Error
 	}
 
@@ -193,7 +193,11 @@ func (s *GoodsServer) UpdateGoods(ctx context.Context, req *proto.CreateGoodsInf
 
 }
 
-//func (s *GoodsServer) GetGoodsDetail(ctx context.Context, req *proto.GoodInfoRequest) (*proto.GoodsInfoResponse, error) {
-//	// TODO: 待实现
-//	return &proto.GoodsInfoResponse{}, nil
-//}
+func (s *GoodsServer) GetGoodsDetail(ctx context.Context, req *proto.GoodInfoRequest) (*proto.GoodsInfoResponse, error) {
+	var goods model.Goods
+	if result := global.DB.Preload("Category").Preload("Brands").First(&goods, req.Id); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.NotFound, "商品不存在")
+	}
+	goodsInfoResponse := ModelToResponse(goods)
+	return &goodsInfoResponse, nil
+}

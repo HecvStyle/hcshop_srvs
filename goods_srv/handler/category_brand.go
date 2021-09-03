@@ -18,7 +18,7 @@ func (s *GoodsServer) CategoryBrandList(ctx context.Context, req *proto.Category
 	var total int64
 	global.DB.Model(&model.GoodsCategoryBrand{}).Count(&total)
 	categoryBrandListResp.Total = int32(total)
-	global.DB.Preload("Category").Preload("Brands").Scan(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&categoryBrands)
+	global.DB.Preload("Category").Preload("Brands").Scopes(Paginate(int(req.Pages), int(req.PagePerNums))).Find(&categoryBrands)
 
 	var categoryBrandsResponses []*proto.CategoryBrandResponse
 	for _, categoryBrand := range categoryBrands {
@@ -81,7 +81,7 @@ func (s *GoodsServer) CreateCategoryBrand(ctx context.Context, req *proto.Catego
 	}
 
 	categoryBrands := model.GoodsCategoryBrand{BrandsID: brands.ID, CategoryID: category.ID}
-	global.DB.Save(categoryBrands)
+	global.DB.Save(&categoryBrands)
 	return &proto.CategoryBrandResponse{Id: categoryBrands.BrandsID}, nil
 
 }
