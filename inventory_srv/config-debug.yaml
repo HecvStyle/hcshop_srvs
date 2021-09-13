@@ -1,0 +1,7 @@
+host: '116.62.189.28'
+port: 8848
+Namespace: '3135dedc-e875-44cd-bb14-59aacad5bbad'
+user: 'nacos'
+password: 'mEnmyz-5magjo-feztub'
+dataid: 'inventory-srv.json'
+Group: 'dev'
