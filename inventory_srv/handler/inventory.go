@@ -156,5 +156,52 @@ func (i InventoryServer) Sell(ctx context.Context, in *proto.SellInfo, opts ...g
 }
 
 func (i InventoryServer) Reback(ctx context.Context, in *proto.SellInfo, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	panic("implement me")
+	client := goredislib.NewClient(&goredislib.Options{
+		Addr:     fmt.Sprintf("%s:%d", global.ServerConfig.RedisInfo.Host, global.ServerConfig.RedisInfo.Port),
+		Password: global.ServerConfig.RedisInfo.Password,
+	})
+	pool := goredis.NewPool(client)
+	rs := redsync.New(pool) // 这里可以使用多个pool 初始化,形成集群的锁
+
+	tx := global.DB.Begin()
+	sellDetail := model.StockSellDetail{
+		OrderSn: in.OrderSn,
+		Status:  2,
+	}
+	var goodsInvInfos []model.GoodsDetail // 所有要扣的商品ID和对应的要扣件的库存
+	for _, goodsInvInfo := range in.GoodsInfo {
+		goodsInvInfos = append(goodsInvInfos, model.GoodsDetail{
+			Goods: goodsInvInfo.GoodsId,
+			Num:   goodsInvInfo.Num,
+		})
+		// 这是退回的库存记录对象
+		var inv model.Inventory
+		//搞个分布式同步锁出来，使用商品ID作为key
+		// 这样使用分布式锁，其实也降低了效率，所有的请求都变成了窜行方式
+		// 可以考虑做分段做库存，将商品的库存，请求过来随机拿一把锁。类似java里边 concurrentMap的分段锁思想。但是复杂度有上升了
+		mutext := rs.NewMutex(fmt.Sprintf("goods_%d", goodsInvInfo.GoodsId))
+		// 获取锁
+		if err := mutext.Lock(); err != nil {
+			return nil, status.Errorf(codes.Internal, "获取分布式锁失败")
+		}
+
+		if result := global.DB.Where(&model.Inventory{Goods: goodsInvInfo.GoodsId}).First(&inv); result.RowsAffected == 0 {
+			tx.Rollback()
+			return nil, status.Errorf(codes.Internal, "没有该商品库存信息")
+		}
+
+		inv.Stocks += goodsInvInfo.Num
+		tx.Save(&inv)
+
+		if ok, err := mutext.Unlock(); !ok || err != nil {
+			return nil, status.Errorf(codes.Internal, "释放redis 分布式锁失败")
+		}
+	}
+	sellDetail.Detail = goodsInvInfos
+	if result := tx.Create(&sellDetail); result.RowsAffected == 0 {
+		tx.Rollback()
+		return nil, status.Errorf(codes.Internal, "保存库存退回历史失败")
+	}
+	tx.Commit()
+	return &emptypb.Empty{}, nil
 }
