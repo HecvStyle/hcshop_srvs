@@ -6,8 +6,7 @@ import (
 	goredislib "github.com/go-redis/redis/v8"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	//"go.uber.org/zap"
-	"google.golang.org/grpc"
+
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -21,7 +20,7 @@ type InventoryServer struct {
 	proto.UnimplementedInventoryServer
 }
 
-func (i InventoryServer) SetInv(ctx context.Context, in *proto.GoodsInvInfo, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (i InventoryServer) SetInv(ctx context.Context, in *proto.GoodsInvInfo) (*emptypb.Empty, error) {
 	var inv model.Inventory
 	global.DB.Where(&model.Inventory{Goods: in.GoodsId}).First(&inv)
 	inv.Goods = in.GoodsId
@@ -31,7 +30,7 @@ func (i InventoryServer) SetInv(ctx context.Context, in *proto.GoodsInvInfo, opt
 	return &emptypb.Empty{}, nil
 }
 
-func (i InventoryServer) InvDetail(ctx context.Context, in *proto.GoodsInvInfo, opts ...grpc.CallOption) (*proto.GoodsInvInfo, error) {
+func (i InventoryServer) InvDetail(ctx context.Context, in *proto.GoodsInvInfo) (*proto.GoodsInvInfo, error) {
 	var inv model.Inventory
 	if result := global.DB.Where(&model.Inventory{Goods: in.GoodsId}).First(&inv); result.RowsAffected == 0 {
 		return nil, status.Errorf(codes.NotFound, "没有找到该商品的库存信息")
@@ -43,7 +42,7 @@ func (i InventoryServer) InvDetail(ctx context.Context, in *proto.GoodsInvInfo, 
 
 }
 
-func (i InventoryServer) Sell(ctx context.Context, in *proto.SellInfo, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (i InventoryServer) Sell(ctx context.Context, in *proto.SellInfo) (*emptypb.Empty, error) {
 	// 这里使用分布式锁来实现
 	client := goredislib.NewClient(&goredislib.Options{
 		Addr:     fmt.Sprintf("%s:%d", global.ServerConfig.RedisInfo.Host, global.ServerConfig.RedisInfo.Port),
@@ -155,7 +154,7 @@ func (i InventoryServer) Sell(ctx context.Context, in *proto.SellInfo, opts ...g
 	//return &emptypb.Empty{}, nil
 }
 
-func (i InventoryServer) Reback(ctx context.Context, in *proto.SellInfo, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+func (i InventoryServer) Reback(ctx context.Context, in *proto.SellInfo) (*emptypb.Empty, error) {
 	client := goredislib.NewClient(&goredislib.Options{
 		Addr:     fmt.Sprintf("%s:%d", global.ServerConfig.RedisInfo.Host, global.ServerConfig.RedisInfo.Port),
 		Password: global.ServerConfig.RedisInfo.Password,
