@@ -75,4 +75,12 @@ fabric.properties
 
 /user_srv/config-pro.yaml
 /user_srv/config-debug.yaml
+/goods_srv/config-pro.yaml
+/goods_srv/config-debug.yaml
+/inventory_srv/config-pro.yaml
+/inventory_srv/config-debug.yaml
+/order_srv/config-pro.yaml
+/order_srv/config-debug.yaml
+
 /tmp/
+order_srv/model/main/main.go
