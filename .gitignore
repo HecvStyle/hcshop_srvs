@@ -84,5 +84,5 @@ fabric.properties
 
 /tmp/
 order_srv/model/main/main.go
-goods_srv/main.go
-inventory_srv/main.go
+goods_srv/model/main/main.go
+inventory_srv/model/main/main.go

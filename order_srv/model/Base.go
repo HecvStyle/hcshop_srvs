@@ -15,7 +15,7 @@ type BaseModel struct {
 	IsDeleted bool           `json:"-"`
 }
 
-// GormList Gorm 自定义类型，用户在写入和读出数据是，通过反射方式，还原到定义的模型结构
+// GormList Gorm 自定义类型，用户在写入和读出数据的时候，通过反射方式，还原到定义的模型结构
 type GormList []string
 
 func (g *GormList) Scan(value interface{}) error {
