@@ -34,6 +34,10 @@ func main() {
 	// 初始化数据里链接
 	initialize.InitDB()
 
+	// 其他微服务连接
+	initialize.InitGoodsSrvConn()
+	initialize.InitInventorySrvConn()
+
 	zap.S().Info(global.ServerConfig)
 
 	flag.Parse()

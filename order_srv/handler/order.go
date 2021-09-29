@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"hcshop_srvs/inventory_srv/global"
+	"hcshop_srvs/order_srv/global"
 	"hcshop_srvs/order_srv/model"
 	"hcshop_srvs/order_srv/proto"
 )
@@ -72,12 +72,55 @@ func (o *OrderServer) DeleteCartItem(ctx context.Context, req *proto.CartItemReq
 }
 
 func (o *OrderServer) CreateOrder(ctx context.Context, req *proto.OrderRequest) (*proto.OrderInfoResponse, error) {
-	panic("implement me")
 	/*
-	1.商品价格自己查询->商品服务 ====>  跨微服务调用
-	2.库存扣减 -> 库存服务 ====> 跨微服务调用
-	 */
+		0.购物车中选择需要购买的商品
+		1.商品价格自己查询->商品服务 ====>  跨微服务调用
+		2.库存扣减 -> 库存服务 ====> 跨微服务调用
+	*/
 
+	//批量查询商品信息
+	var goodsIds []int32
+	var goodsCarts []model.ShoppingCart
+	goodsNumsMap := map[int32]int32{}
+	if result := global.DB.Where(&model.ShoppingCart{User: req.UserId, Checked: true}).Find(&goodsCarts); result.RowsAffected == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "没有选择结算的商品")
+	}
+	for _, shopCart := range goodsCarts {
+		goodsIds = append(goodsIds, shopCart.Goods)
+		goodsNumsMap[shopCart.Goods] = shopCart.Nums
+	}
+
+	goodsList, err := global.GoodsSrvClient.BatchGetGoods(context.Background(), &proto.BatchGoodsIdInfo{Id: goodsIds})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "批量查询商品信息失败")
+	}
+
+	var orderAmount float32
+	var orderGoods []*model.OrderGoods
+	var goodsInvInfo []*proto.GoodsInvInfo
+	for _, goods := range goodsList.Data {
+		orderAmount += goods.ShopPrice * float32(goodsNumsMap[goods.Id])
+		orderGoods = append(orderGoods, &model.OrderGoods{
+			Goods:      goods.Id,
+			GoodsName:  goods.Name,
+			GoodsImage: goods.GoodsFrontImage,
+			GoodsPrice: goods.ShopPrice,
+			Nums:       goodsNumsMap[goods.Id],
+		})
+
+		goodsInvInfo = append(goodsInvInfo, &proto.GoodsInvInfo{
+			GoodsId: goods.Id,
+			Num:     goodsNumsMap[goods.Id],
+		})
+	}
+
+	// 库存扣减处理
+	_, err = global.InventorySrvClient.Sell(context.Background(), &proto.SellInfo{
+		GoodsInfo: goodsInvInfo,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.ResourceExhausted, "扣减库存失败")
+	}
 
 }
 
