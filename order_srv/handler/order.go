@@ -2,12 +2,15 @@ package handler
 
 import (
 	"context"
+	"fmt"
+	"golang.org/x/exp/rand"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"hcshop_srvs/order_srv/global"
 	"hcshop_srvs/order_srv/model"
 	"hcshop_srvs/order_srv/proto"
+	"time"
 )
 
 type OrderServer struct {
@@ -121,7 +124,46 @@ func (o *OrderServer) CreateOrder(ctx context.Context, req *proto.OrderRequest) 
 	if err != nil {
 		return nil, status.Errorf(codes.ResourceExhausted, "扣减库存失败")
 	}
+	// 生成订单表
+	tx := global.DB.Begin()
+	order := model.OrderInfo{
+		User:         req.UserId,
+		OrderSn:      GenerateOrderSn(req.UserId),
+		OrderMount:   orderAmount,
+		Address:      req.Address,
+		SignerName:   req.Name,
+		SingerMobile: req.Mobile,
+		Post:         req.Post,
+	}
+	if result := tx.Save(&order); result.RowsAffected == 0 {
+		tx.Rollback()
+		return nil, status.Errorf(codes.Internal, "创建订单失败")
+	}
 
+	for _, _orderGoods := range orderGoods {
+		_orderGoods.Order = order.ID
+	}
+	// 批量插入订单商品操作
+	// 一次批量插入100
+	if result := tx.CreateInBatches(orderGoods, 100); result.RowsAffected == 0 {
+		tx.Rollback()
+		return nil, status.Errorf(codes.Internal, "创建订单失败")
+	}
+
+	// 更新购物车商品状态为已删除
+	if result := global.DB.Where(&model.ShoppingCart{User: req.UserId, Checked: true}).Delete(&model.ShoppingCart{}); result.RowsAffected == 0 {
+		tx.Rollback()
+		return nil, status.Errorf(codes.Internal, "创建订单失败")
+	}
+	tx.Commit()
+	return &proto.OrderInfoResponse{Id: order.ID, OrderSn: order.OrderSn, Total: order.OrderMount}, nil
+}
+
+func GenerateOrderSn(userId int32) string {
+	now := time.Now()
+	rand.Seed(uint64(time.Now().UnixNano()))
+	orderSn := fmt.Sprintf("%d%d%d%d%d%d%d%d", now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Nanosecond(), userId, rand.Intn(90)+10)
+	return orderSn
 }
 
 func (o *OrderServer) OrderList(ctx context.Context, req *proto.OrderFilterRequest) (*proto.OrderListResponse, error) {

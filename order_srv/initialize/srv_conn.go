@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	_ "github.com/mbobakov/grpc-consul-resolver" // It's important
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"hcshop_srvs/order_srv/global"
@@ -35,5 +36,5 @@ func InitInventorySrvConn() {
 		zap.S().Fatal("库存服务注册连接失败")
 	}
 	// 这里涉及到了多个链接，都只用了一个gorutine,考虑使用连接池才可以
-	global.GoodsSrvClient = proto.NewGoodsClient(conn)
+	global.InventorySrvClient = proto.NewInventoryClient(conn)
 }
